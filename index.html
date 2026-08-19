@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Learn English tenses with lessons, progressive games, smart practice and progress tracking.">
+  <meta name="theme-color" content="#0d8f62">
+  <title>LearnTense — Learn · Practice · Master</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- AUTH SCREEN -->
+  <section id="auth" class="auth-screen">
+    <div class="auth-box">
+      <div class="auth-logo">📚</div>
+      <h1 class="auth-title"><span>Learn</span>Tense</h1>
+      <p class="auth-tagline">Learn Grammar. Play. Master.</p>
+
+      <div class="auth-card">
+        <h2 id="authTitle">Welcome Back!</h2>
+        <p class="muted" id="authMessage">Continue your learning adventure.</p>
+
+        <form id="authForm">
+          <label class="field">
+            <span class="field-label">Email</span>
+            <input id="authEmail" type="email" autocomplete="email" required placeholder="you@example.com">
+          </label>
+          <label class="field">
+            <span class="field-label">Password</span>
+            <div class="pass-row">
+              <input id="authPassword" type="password" autocomplete="current-password" minlength="6" required placeholder="Min. 6 characters">
+              <button type="button" class="password-toggle" id="passwordToggle" aria-label="Show password">👁</button>
+            </div>
+          </label>
+          <div class="auth-options">
+            <label class="remember"><input type="checkbox" id="rememberMe" checked> Remember me</label>
+            <button type="button" class="auth-link" id="forgotPasswordBtn">Forgot password?</button>
+          </div>
+          <button class="primary full" id="authSubmit" type="submit">Sign In</button>
+        </form>
+
+        <div class="auth-divider"><span>or</span></div>
+        <button class="google-btn" id="googleBtn" type="button"><span class="google-g">G</span> Continue with Google</button>
+        <button class="text-btn" id="authToggle" type="button">New here? <strong>Create an account</strong></button>
+        <button class="guest-link" id="guestBtn" type="button">Continue as guest →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- MAIN APP -->
+  <div id="app" hidden>
+    <header class="topbar">
+      <a class="brand" href="#dashboard" data-screen="dashboard">📚 <span>LearnTense</span></a>
+      <nav class="main-nav" aria-label="Main Navigation">
+        <button class="nav-btn active" data-screen="dashboard">Dashboard</button>
+        <button class="nav-btn" data-screen="library">Tenses</button>
+        <button class="nav-btn" data-screen="review">Review</button>
+      </nav>
+      <div class="top-actions">
+        <span id="userLabel" class="user-label"></span>
+        <div class="menu-wrap">
+          <button class="icon-btn" id="menuBtn" aria-label="Settings menu" aria-expanded="false" aria-haspopup="true">☰</button>
+          <div class="dropdown" id="settingsMenu" hidden>
+            <button type="button" id="themeBtn" class="dropdown-item">
+              <span id="themeIcon">🌙</span> <span id="themeLabel">Dark mode</span>
+            </button>
+            <button type="button" id="logoutBtn" class="dropdown-item danger">
+              ↪ Log out
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <!-- DASHBOARD -->
+      <section id="dashboard" class="screen active">
+        <div class="dash-hero">
+          <p class="eyebrow">Your English journey</p>
+          <h1>Learn. <span>Practice.</span> <strong>Master.</strong></h1>
+          <p class="muted">Build tense confidence one focused session at a time.</p>
+          <button class="primary" id="continueBtn">Continue learning →</button>
+        </div>
+
+        <div class="stats-grid">
+          <article class="stat"><span class="stat-icon">🎯</span><strong id="accuracyStat">—</strong><small>Accuracy</small></article>
+          <article class="stat"><span class="stat-icon">🔥</span><strong id="streakStat">0</strong><small>Day streak</small></article>
+          <article class="stat"><span class="stat-icon">📚</span><strong id="masteredStat">0/12</strong><small>Tenses mastered</small></article>
+          <article class="stat"><span class="stat-icon">✅</span><strong id="answeredStat">0</strong><small>Questions answered</small></article>
+        </div>
+
+        <div id="achievementsStrip" class="achievements-strip" aria-label="Achievements"></div>
+        <div id="dueReview" hidden></div>
+
+        <article class="continue-card" id="continueCard"></article>
+
+        <div class="two-col">
+          <section class="panel">
+            <div class="section-head">
+              <h2>Tense mastery</h2>
+              <button class="link-btn" data-screen="library">View all →</button>
+            </div>
+            <div id="progressList" class="progress-list"></div>
+          </section>
+          <section class="panel practice-panel">
+            <h2>Smart practice</h2>
+            <p class="muted">Strengthen weak areas and review mistakes.</p>
+            <button class="secondary full" id="weakBtn">🧠 Practice weak areas</button>
+            <button class="secondary full" id="mistakesBtn">🔄 Review mistakes</button>
+          </section>
+        </div>
+      </section>
+
+      <!-- LIBRARY -->
+      <section id="library" class="screen">
+        <div class="page-title">
+          <p class="eyebrow">Grammar library</p>
+          <h1>All 12 English tenses</h1>
+          <p class="muted">Choose a tense to learn the rule, see examples and practise.</p>
+        </div>
+        <div id="tenseGrid" class="tense-grid"></div>
+      </section>
+
+      <!-- LESSON -->
+      <section id="lesson" class="screen narrow">
+        <article id="lessonCard" class="lesson-card"></article>
+      </section>
+
+      <!-- QUIZ -->
+      <section id="quiz" class="screen narrow">
+        <div id="quizCard"></div>
+      </section>
+
+      <!-- RESULT -->
+      <section id="result" class="screen narrow">
+        <article id="resultCard" class="result-card"></article>
+      </section>
+
+      <!-- REVIEW -->
+      <section id="review" class="screen">
+        <div class="page-title">
+          <p class="eyebrow">Smart review</p>
+          <h1>Your practice queue</h1>
+          <p class="muted">Questions you missed appear here for targeted revision.</p>
+        </div>
+        <div id="reviewContent" class="review-grid"></div>
+      </section>
+    </main>
+
+    <!-- MOBILE BOTTOM NAVIGATION -->
+    <nav class="mobile-bottom-nav" aria-label="Mobile Navigation">
+      <button class="mob-nav-btn active" data-screen="dashboard">
+        <span class="mob-icon">📊</span>
+        <span>Dashboard</span>
+      </button>
+      <button class="mob-nav-btn" data-screen="library">
+        <span class="mob-icon">📚</span>
+        <span>Tenses</span>
+      </button>
+      <button class="mob-nav-btn" data-screen="review">
+        <span class="mob-icon">🔄</span>
+        <span>Review</span>
+      </button>
+    </nav>
+
+    <footer>LearnTense · Learn English tenses by practising</footer>
+  </div>
+</div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
