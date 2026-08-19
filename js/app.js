@@ -12,6 +12,57 @@ const $$ = sel => document.querySelectorAll(sel);
 let session = null;
 let currentUser = { mode: "guest", email: null };
 
+// ---------------- SUPABASE SESSION RESTORE ----------------
+// Restore an existing Supabase login when the app opens.
+// This also handles the session returned after OAuth login.
+
+supabase.auth.onAuthStateChange((event, authSession) => {
+  if (authSession?.user) {
+    localStorage.removeItem("lt3_guest");
+
+    currentUser = {
+      mode: "supabase",
+      email: authSession.user.email
+    };
+
+    openApp(currentUser);
+  } else if (event === "SIGNED_OUT") {
+    localStorage.removeItem("lt3_guest");
+
+    currentUser = {
+      mode: "guest",
+      email: null
+    };
+
+    showAuth();
+  }
+});
+
+// Check for a session that already exists in Supabase storage.
+(async () => {
+  try {
+    const { data, error } = await supabase.auth.getSession();
+
+    if (error) {
+      console.error("Supabase session error:", error);
+      return;
+    }
+
+    if (data?.session?.user) {
+      localStorage.removeItem("lt3_guest");
+
+      currentUser = {
+        mode: "supabase",
+        email: data.session.user.email
+      };
+
+      openApp(currentUser);
+    }
+  } catch (error) {
+    console.error("Unable to restore Supabase session:", error);
+  }
+})();
+
 function escapeHtml(str) {
   return String(str ?? "")
     .replace(/&/g, "&amp;")
