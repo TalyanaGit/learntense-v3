@@ -1,9 +1,10 @@
 /**
- * LearnTense v3 — Main application controller
+ * LearnTense v3 — Main application controller with Supabase Auth
  */
 import { TENSES, LESSONS, ACHIEVEMENTS } from "./data.js";
 import { storage } from "./storage.js";
 import { createSession, checkAnswer, recordResult, SP_GAMES_META } from "./quiz.js";
+import { supabase } from "./supabase.js";
 
 const $ = id => document.getElementById(id);
 const $$ = sel => document.querySelectorAll(sel);
@@ -38,10 +39,10 @@ function showScreen(id) {
   if (id === "library") renderLibrary();
 }
 
-function openApp() {
+function openApp(user) {
   $("auth").hidden = true;
   $("app").hidden = false;
-  $("userLabel").textContent = currentUser.email || "Guest";
+  $("userLabel").textContent = user?.email || "Guest";
   renderDashboard();
   renderLibrary();
 }
@@ -51,45 +52,100 @@ function showAuth() {
   $("app").hidden = true;
 }
 
+// ---------------- AUTH HANDLERS ----------------
+
+// 1. Guest Mode
 $("guestBtn").onclick = () => {
   currentUser = { mode: "guest", email: null };
-  openApp();
+  localStorage.setItem("lt3_guest", "true");
+  openApp(currentUser);
 };
 
-$("authForm").onsubmit = e => {
+// 2. Email Sign In & Sign Up
+$("authForm").onsubmit = async e => {
   e.preventDefault();
   const email = $("authEmail").value.trim();
-  const pass = $("authPassword").value;
-  if (!email || pass.length < 6) {
-    $("authMessage").textContent = "Please enter a valid email and password (min 6 characters).";
+  const password = $("authPassword").value;
+  const isSignIn = $("authSubmit").textContent.includes("Sign In");
+
+  if (!email || password.length < 6) {
+    $("authMessage").textContent = "Please provide a valid email and minimum 6-character password.";
     return;
   }
-  currentUser = { mode: "local", email };
-  localStorage.setItem("lt3_user", JSON.stringify(currentUser));
-  openApp();
+
+  $("authMessage").textContent = "Authenticating...";
+  $("authSubmit").disabled = true;
+
+  try {
+    if (isSignIn) {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      localStorage.removeItem("lt3_guest");
+      currentUser = { mode: "supabase", email: data.user.email };
+      openApp(currentUser);
+    } else {
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if (error) throw error;
+      if (data.session) {
+        localStorage.removeItem("lt3_guest");
+        currentUser = { mode: "supabase", email: data.user.email };
+        openApp(currentUser);
+      } else {
+        $("authMessage").textContent = "Sign-up successful! Check your email to confirm your account.";
+      }
+    }
+  } catch (err) {
+    $("authMessage").textContent = err.message || "Authentication failed.";
+  } finally {
+    $("authSubmit").disabled = false;
+  }
 };
 
+// Toggle Sign In / Sign Up Form Mode
 $("authToggle").onclick = () => {
-  const isSignin = $("authSubmit").textContent.includes("Sign");
+  const isSignin = $("authSubmit").textContent.includes("Sign In");
   $("authSubmit").textContent = isSignin ? "Create account" : "Sign In";
   $("authToggle").innerHTML = isSignin
     ? 'Already have an account? <strong>Sign in</strong>'
     : 'New here? <strong>Create an account</strong>';
   $("authTitle").textContent = isSignin ? "Create Account" : "Welcome Back!";
   $("authMessage").textContent = isSignin
-    ? "Save progress on this device."
+    ? "Create a cloud profile to track your progress."
     : "Continue your learning adventure.";
 };
 
-$("forgotPasswordBtn").onclick = () => {
-  $("authMessage").textContent = "Password reset will be available when cloud sync is connected. Use Guest or Local profile for now.";
+// 3. Google OAuth
+$("googleBtn").onclick = async () => {
+  try {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: window.location.origin }
+    });
+    if (error) throw error;
+  } catch (err) {
+    $("authMessage").textContent = err.message || "Google sign-in is currently unavailable.";
+  }
 };
 
-$("googleBtn").onclick = () => {
-  $("authMessage").textContent = "Google OAuth will be available when Supabase cloud sync is configured.";
+// 4. Password Reset
+$("forgotPasswordBtn").onclick = async () => {
+  const email = $("authEmail").value.trim();
+  if (!email) {
+    $("authMessage").textContent = "Enter your email address above to receive a reset link.";
+    return;
+  }
+  try {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin
+    });
+    if (error) throw error;
+    $("authMessage").textContent = "Password reset email sent. Check your inbox.";
+  } catch (err) {
+    $("authMessage").textContent = err.message || "Error sending reset email.";
+  }
 };
 
-// Dropdown & Keyboard Escape Listener
+// 5. Settings Menu & Log Out
 const menuBtn = $("menuBtn");
 const settingsMenu = $("settingsMenu");
 function closeMenu() {
@@ -117,10 +173,13 @@ document.addEventListener("keydown", e => {
   }
 });
 
-$("logoutBtn").onclick = () => {
+$("logoutBtn").onclick = async () => {
   closeMenu();
+  try {
+    await supabase.auth.signOut();
+  } catch {}
+  localStorage.removeItem("lt3_guest");
   currentUser = { mode: "guest", email: null };
-  localStorage.removeItem("lt3_user");
   showAuth();
 };
 
@@ -148,6 +207,8 @@ document.addEventListener("click", e => {
   const btn = e.target.closest("[data-screen]");
   if (btn) showScreen(btn.dataset.screen);
 });
+
+// ---------------- RENDER VIEWS ----------------
 
 function renderDashboard() {
   const progresses = TENSES.map(t => storage.getTenseProgress(t.id));
@@ -463,11 +524,9 @@ $("continueBtn").onclick = () => startLesson(storage.getLastTense());
 $("weakBtn").onclick = () => startWeakPractice();
 $("mistakesBtn").onclick = () => showScreen("review");
 
-(function init() {
-  const saved = localStorage.getItem("lt3_user");
-  if (saved) {
-    try { currentUser = JSON.parse(saved); } catch {}
-  }
+// ---------------- INITIALIZATION ----------------
+
+(async function init() {
   const theme = storage.getSettings().theme;
   if (theme === "dark") {
     document.documentElement.dataset.theme = "dark";
@@ -475,10 +534,35 @@ $("mistakesBtn").onclick = () => showScreen("review");
   } else {
     updateThemeUI(false);
   }
-  if (currentUser.mode === "local" || currentUser.mode === "guest") {
-    if (saved) openApp();
-    else showAuth();
-  } else {
-    showAuth();
+
+  // 1. Check for active Supabase session
+  try {
+    const { data: { session: activeSession } } = await supabase.auth.getSession();
+    if (activeSession?.user) {
+      currentUser = { mode: "supabase", email: activeSession.user.email };
+      openApp(currentUser);
+      return;
+    }
+  } catch (err) {
+    console.warn("Supabase session check skipped:", err);
   }
+
+  // 2. Check for Guest session
+  if (localStorage.getItem("lt3_guest") === "true") {
+    currentUser = { mode: "guest", email: null };
+    openApp(currentUser);
+    return;
+  }
+
+  // 3. Fallback to Auth screen
+  showAuth();
+
+  // 4. Real-time auth listener
+  supabase.auth.onAuthStateChange((_event, newSession) => {
+    if (newSession?.user) {
+      currentUser = { mode: "supabase", email: newSession.user.email };
+      openApp(currentUser);
+    }
+  });
 })();
+              
