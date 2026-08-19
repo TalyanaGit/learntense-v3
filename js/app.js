@@ -12,56 +12,7 @@ const $$ = sel => document.querySelectorAll(sel);
 let session = null;
 let currentUser = { mode: "guest", email: null };
 
-// ---------------- SUPABASE SESSION RESTORE ----------------
-// Restore an existing Supabase login when the app opens.
-// This also handles the session returned after OAuth login.
-
-supabase.auth.onAuthStateChange((event, authSession) => {
-  if (authSession?.user) {
-    localStorage.removeItem("lt3_guest");
-
-    currentUser = {
-      mode: "supabase",
-      email: authSession.user.email
-    };
-
-    openApp(currentUser);
-  } else if (event === "SIGNED_OUT") {
-    localStorage.removeItem("lt3_guest");
-
-    currentUser = {
-      mode: "guest",
-      email: null
-    };
-
-    showAuth();
-  }
-});
-
-// Check for a session that already exists in Supabase storage.
-(async () => {
-  try {
-    const { data, error } = await supabase.auth.getSession();
-
-    if (error) {
-      console.error("Supabase session error:", error);
-      return;
-    }
-
-    if (data?.session?.user) {
-      localStorage.removeItem("lt3_guest");
-
-      currentUser = {
-        mode: "supabase",
-        email: data.session.user.email
-      };
-
-      openApp(currentUser);
-    }
-  } catch (error) {
-    console.error("Unable to restore Supabase session:", error);
-  }
-})();
+// ---------------- UTILITIES ----------------
 
 function escapeHtml(str) {
   return String(str ?? "")
@@ -78,6 +29,13 @@ function typeLabel(t) {
 
 function mastery(id) {
   return storage.getTenseProgress(id).mastery || 0;
+}
+
+function updateThemeUI(isDark) {
+  const icon = $("themeIcon");
+  const label = $("themeLabel");
+  if (icon) icon.textContent = isDark ? "☀️" : "🌙";
+  if (label) label.textContent = isDark ? "Light mode" : "Dark mode";
 }
 
 function showScreen(id) {
@@ -102,162 +60,6 @@ function showAuth() {
   $("auth").hidden = false;
   $("app").hidden = true;
 }
-
-// ---------------- AUTH HANDLERS ----------------
-
-// 1. Guest Mode
-$("guestBtn").onclick = () => {
-  currentUser = { mode: "guest", email: null };
-  localStorage.setItem("lt3_guest", "true");
-  openApp(currentUser);
-};
-
-// 2. Email Sign In & Sign Up
-$("authForm").onsubmit = async e => {
-  e.preventDefault();
-  const email = $("authEmail").value.trim();
-  const password = $("authPassword").value;
-  const isSignIn = $("authSubmit").textContent.includes("Sign In");
-
-  if (!email || password.length < 6) {
-    $("authMessage").textContent = "Please provide a valid email and minimum 6-character password.";
-    return;
-  }
-
-  $("authMessage").textContent = "Authenticating...";
-  $("authSubmit").disabled = true;
-
-  try {
-    if (isSignIn) {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-      localStorage.removeItem("lt3_guest");
-      currentUser = { mode: "supabase", email: data.user.email };
-      openApp(currentUser);
-    } else {
-      const { data, error } = await supabase.auth.signUp({ email, password });
-      if (error) throw error;
-      if (data.session) {
-        localStorage.removeItem("lt3_guest");
-        currentUser = { mode: "supabase", email: data.user.email };
-        openApp(currentUser);
-      } else {
-        $("authMessage").textContent = "Sign-up successful! Check your email to confirm your account.";
-      }
-    }
-  } catch (err) {
-    $("authMessage").textContent = err.message || "Authentication failed.";
-  } finally {
-    $("authSubmit").disabled = false;
-  }
-};
-
-// Toggle Sign In / Sign Up Form Mode
-$("authToggle").onclick = () => {
-  const isSignin = $("authSubmit").textContent.includes("Sign In");
-  $("authSubmit").textContent = isSignin ? "Create account" : "Sign In";
-  $("authToggle").innerHTML = isSignin
-    ? 'Already have an account? <strong>Sign in</strong>'
-    : 'New here? <strong>Create an account</strong>';
-  $("authTitle").textContent = isSignin ? "Create Account" : "Welcome Back!";
-  $("authMessage").textContent = isSignin
-    ? "Create a cloud profile to track your progress."
-    : "Continue your learning adventure.";
-};
-
-// 3. Google OAuth
-$("googleBtn").onclick = async () => {
-  try {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: window.location.origin }
-    });
-    if (error) throw error;
-  } catch (err) {
-    $("authMessage").textContent = err.message || "Google sign-in is currently unavailable.";
-  }
-};
-
-// 4. Password Reset
-$("forgotPasswordBtn").onclick = async () => {
-  const email = $("authEmail").value.trim();
-  if (!email) {
-    $("authMessage").textContent = "Enter your email address above to receive a reset link.";
-    return;
-  }
-  try {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin
-    });
-    if (error) throw error;
-    $("authMessage").textContent = "Password reset email sent. Check your inbox.";
-  } catch (err) {
-    $("authMessage").textContent = err.message || "Error sending reset email.";
-  }
-};
-
-// 5. Settings Menu & Log Out
-const menuBtn = $("menuBtn");
-const settingsMenu = $("settingsMenu");
-function closeMenu() {
-  if (settingsMenu) settingsMenu.hidden = true;
-  if (menuBtn) menuBtn.setAttribute("aria-expanded", "false");
-}
-
-menuBtn?.addEventListener("click", e => {
-  e.stopPropagation();
-  const willOpen = settingsMenu.hidden;
-  settingsMenu.hidden = !willOpen;
-  menuBtn.setAttribute("aria-expanded", willOpen ? "true" : "false");
-});
-
-document.addEventListener("click", e => {
-  if (settingsMenu && !settingsMenu.hidden && !e.target.closest(".menu-wrap")) {
-    closeMenu();
-  }
-});
-
-document.addEventListener("keydown", e => {
-  if (e.key === "Escape" && settingsMenu && !settingsMenu.hidden) {
-    closeMenu();
-    menuBtn?.focus();
-  }
-});
-
-$("logoutBtn").onclick = async () => {
-  closeMenu();
-  try {
-    await supabase.auth.signOut();
-  } catch {}
-  localStorage.removeItem("lt3_guest");
-  currentUser = { mode: "guest", email: null };
-  showAuth();
-};
-
-function updateThemeUI(isDark) {
-  const icon = $("themeIcon");
-  const label = $("themeLabel");
-  if (icon) icon.textContent = isDark ? "☀️" : "🌙";
-  if (label) label.textContent = isDark ? "Light mode" : "Dark mode";
-}
-
-$("themeBtn").onclick = () => {
-  const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
-  document.documentElement.dataset.theme = next === "dark" ? "dark" : "";
-  storage.setSetting("theme", next);
-  updateThemeUI(next === "dark");
-  closeMenu();
-};
-
-$("passwordToggle")?.addEventListener("click", () => {
-  const input = $("authPassword");
-  input.type = input.type === "password" ? "text" : "password";
-});
-
-document.addEventListener("click", e => {
-  const btn = e.target.closest("[data-screen]");
-  if (btn) showScreen(btn.dataset.screen);
-});
 
 // ---------------- RENDER VIEWS ----------------
 
@@ -556,7 +358,12 @@ function startWeakPractice() {
   startQuiz(sorted[0].id);
 }
 
+// ---------------- EVENT LISTENERS ----------------
+
 document.addEventListener("click", e => {
+  const scr = e.target.closest("[data-screen]");
+  if (scr) showScreen(scr.dataset.screen);
+
   const el = e.target.closest("[data-action]");
   if (!el) return;
   const action = el.dataset.action;
@@ -575,7 +382,146 @@ $("continueBtn").onclick = () => startLesson(storage.getLastTense());
 $("weakBtn").onclick = () => startWeakPractice();
 $("mistakesBtn").onclick = () => showScreen("review");
 
-// ---------------- INITIALIZATION ----------------
+// Auth Controls
+$("guestBtn").onclick = () => {
+  currentUser = { mode: "guest", email: null };
+  localStorage.setItem("lt3_guest", "true");
+  openApp(currentUser);
+};
+
+$("authForm").onsubmit = async e => {
+  e.preventDefault();
+  const email = $("authEmail").value.trim();
+  const password = $("authPassword").value;
+  const isSignIn = $("authSubmit").textContent.includes("Sign In");
+
+  if (!email || password.length < 6) {
+    $("authMessage").textContent = "Please provide a valid email and minimum 6-character password.";
+    return;
+  }
+
+  $("authMessage").textContent = "Authenticating...";
+  $("authSubmit").disabled = true;
+
+  try {
+    if (isSignIn) {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      localStorage.removeItem("lt3_guest");
+      currentUser = { mode: "supabase", email: data.user.email };
+      openApp(currentUser);
+    } else {
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if (error) throw error;
+      if (data.session) {
+        localStorage.removeItem("lt3_guest");
+        currentUser = { mode: "supabase", email: data.user.email };
+        openApp(currentUser);
+      } else {
+        $("authMessage").textContent = "Sign-up successful! Check your email to confirm your account.";
+      }
+    }
+  } catch (err) {
+    $("authMessage").textContent = err.message || "Authentication failed.";
+  } finally {
+    $("authSubmit").disabled = false;
+  }
+};
+
+$("authToggle").onclick = () => {
+  const isSignin = $("authSubmit").textContent.includes("Sign In");
+  $("authSubmit").textContent = isSignin ? "Create account" : "Sign In";
+  $("authToggle").innerHTML = isSignin
+    ? 'Already have an account? <strong>Sign in</strong>'
+    : 'New here? <strong>Create an account</strong>';
+  $("authTitle").textContent = isSignin ? "Create Account" : "Welcome Back!";
+  $("authMessage").textContent = isSignin
+    ? "Create a cloud profile to track your progress."
+    : "Continue your learning adventure.";
+};
+
+$("googleBtn").onclick = async () => {
+  try {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: window.location.origin }
+    });
+    if (error) throw error;
+  } catch (err) {
+    $("authMessage").textContent = err.message || "Google sign-in is currently unavailable.";
+  }
+};
+
+$("forgotPasswordBtn").onclick = async () => {
+  const email = $("authEmail").value.trim();
+  if (!email) {
+    $("authMessage").textContent = "Enter your email address above to receive a reset link.";
+    return;
+  }
+  try {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin
+    });
+    if (error) throw error;
+    $("authMessage").textContent = "Password reset email sent. Check your inbox.";
+  } catch (err) {
+    $("authMessage").textContent = err.message || "Error sending reset email.";
+  }
+};
+
+// Settings Menu
+const menuBtn = $("menuBtn");
+const settingsMenu = $("settingsMenu");
+
+function closeMenu() {
+  if (settingsMenu) settingsMenu.hidden = true;
+  if (menuBtn) menuBtn.setAttribute("aria-expanded", "false");
+}
+
+menuBtn?.addEventListener("click", e => {
+  e.stopPropagation();
+  const willOpen = settingsMenu.hidden;
+  settingsMenu.hidden = !willOpen;
+  menuBtn.setAttribute("aria-expanded", willOpen ? "true" : "false");
+});
+
+document.addEventListener("click", e => {
+  if (settingsMenu && !settingsMenu.hidden && !e.target.closest(".menu-wrap")) {
+    closeMenu();
+  }
+});
+
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && settingsMenu && !settingsMenu.hidden) {
+    closeMenu();
+    menuBtn?.focus();
+  }
+});
+
+$("logoutBtn").onclick = async () => {
+  closeMenu();
+  try {
+    await supabase.auth.signOut();
+  } catch {}
+  localStorage.removeItem("lt3_guest");
+  currentUser = { mode: "guest", email: null };
+  showAuth();
+};
+
+$("themeBtn").onclick = () => {
+  const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  document.documentElement.dataset.theme = next === "dark" ? "dark" : "";
+  storage.setSetting("theme", next);
+  updateThemeUI(next === "dark");
+  closeMenu();
+};
+
+$("passwordToggle")?.addEventListener("click", () => {
+  const input = $("authPassword");
+  input.type = input.type === "password" ? "text" : "password";
+});
+
+// ---------------- SINGLE INITIALIZATION ----------------
 
 (async function init() {
   const theme = storage.getSettings().theme;
@@ -586,11 +532,27 @@ $("mistakesBtn").onclick = () => showScreen("review");
     updateThemeUI(false);
   }
 
-  // 1. Check for active Supabase session
+  // Single global auth state change listener
+  supabase.auth.onAuthStateChange((event, authSession) => {
+    if (authSession?.user) {
+      localStorage.removeItem("lt3_guest");
+      currentUser = { mode: "supabase", email: authSession.user.email };
+      openApp(currentUser);
+    } else if (event === "SIGNED_OUT") {
+      localStorage.removeItem("lt3_guest");
+      currentUser = { mode: "guest", email: null };
+      showAuth();
+    }
+  });
+
+  // Check initial active session
   try {
-    const { data: { session: activeSession } } = await supabase.auth.getSession();
-    if (activeSession?.user) {
-      currentUser = { mode: "supabase", email: activeSession.user.email };
+    const { data, error } = await supabase.auth.getSession();
+    if (error) throw error;
+
+    if (data?.session?.user) {
+      localStorage.removeItem("lt3_guest");
+      currentUser = { mode: "supabase", email: data.session.user.email };
       openApp(currentUser);
       return;
     }
@@ -598,22 +560,13 @@ $("mistakesBtn").onclick = () => showScreen("review");
     console.warn("Supabase session check skipped:", err);
   }
 
-  // 2. Check for Guest session
+  // Fallback to local guest mode if preserved
   if (localStorage.getItem("lt3_guest") === "true") {
     currentUser = { mode: "guest", email: null };
     openApp(currentUser);
     return;
   }
 
-  // 3. Fallback to Auth screen
+  // Default display to login
   showAuth();
-
-  // 4. Real-time auth listener
-  supabase.auth.onAuthStateChange((_event, newSession) => {
-    if (newSession?.user) {
-      currentUser = { mode: "supabase", email: newSession.user.email };
-      openApp(currentUser);
-    }
-  });
 })();
-              
