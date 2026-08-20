@@ -263,4 +263,61 @@ export const QUESTIONS = {
   ],
   6: [
     { id: "pc6_1", type: "mc", difficulty: 1, prompt: "I ___ dinner when the doorbell rang.", options: ["was cooking", "cooked", "have cooked", "am cooking"], answer: 0, explanation: "Background action interrupted by a shorter past event." },
-    { id: "pc6_2", type: "mc", difficulty: 1, prompt: "What ___ you doing at 9 pm yesterday?", options: ["were", "was", "did", "are"], answer: 0, explanation: 
+    { id: "pc6_2", type: "mc", difficulty: 1, prompt: "What ___ you doing at 9 pm yesterday?", options: ["were", "was", "did", "are"], answer: 0, explanation: "Past Continuous asks about an action in progress at a specific past time." },
+    { id: "pc6_3", type: "mc", difficulty: 2, prompt: "While she ___ TV, the phone rang.", options: ["was watching", "watched", "watches", "has watched"], answer: 0, explanation: "'While' + Past Continuous sets the ongoing background scene." },
+    { id: "pc6_4", type: "correct", difficulty: 1, prompt: "They was playing outside.", answer: "They were playing outside.", alternates: ["They were playing outside"], explanation: "Plural subject 'They' takes 'were', not 'was'." },
+    { id: "pc6_5", type: "fill", difficulty: 1, prompt: "He ___ (sleep) when I called him.", answer: "was sleeping", explanation: "Singular subject 'He' + was + verb-ing." },
+    { id: "pc6_6", type: "tf", difficulty: 1, prompt: "“I was reading when the lights went out” shows an interrupted action.", answer: true, explanation: "Past Continuous + Simple Past shows a longer action interrupted by a shorter one." },
+    { id: "pc6_7", type: "tf", difficulty: 2, prompt: "“They was working late” is standard grammar.", answer: false, explanation: "Plural subjects require 'were', not 'was'." }
+  ],
+  7: [
+    { id: "ppf7_1", type: "mc", difficulty: 1, prompt: "By the time we arrived, the film ___.", options: ["had already started", "already started", "has already started", "was already starting"], answer: 0, explanation: "An earlier past event relative to another past event uses Past Perfect." },
+    { id: "ppf7_2", type: "mc", difficulty: 1, prompt: "She ___ before I called her.", options: ["had left", "left", "has left", "was leaving"], answer: 0, explanation: "The leaving happened before another past action (calling)." },
+    { id: "ppf7_3", type: "mc", difficulty: 2, prompt: "I couldn't get in because I ___ my keys at home.", options: ["had left", "left", "have left", "was leaving"], answer: 0, explanation: "Reason (leaving keys) precedes the past result (couldn't get in)." },
+    { id: "ppf7_4", type: "correct", difficulty: 1, prompt: "By 8pm, she had ate dinner.", answer: "By 8pm, she had eaten dinner.", alternates: ["By 8pm, she had eaten dinner"], explanation: "Past Perfect needs past participle: had eaten." },
+    { id: "ppf7_5", type: "fill", difficulty: 1, prompt: "They ___ (finish) the meeting before I arrived.", answer: "had finished", explanation: "Earlier past action + had + past participle." },
+    { id: "ppf7_6", type: "tf", difficulty: 1, prompt: "“She had already left when we got there” describes two past actions in sequence.", answer: true, explanation: "Past Perfect marks the earlier of two past events." },
+    { id: "ppf7_7", type: "tf", difficulty: 2, prompt: "“I have finished before he arrived” correctly uses Past Perfect.", answer: false, explanation: "Should be 'had finished' — Present Perfect cannot pair with a past time reference like this." }
+  ],
+  8: [
+    { id: "ppfc8_1", type: "mc", difficulty: 1, prompt: "She was tired because she ___ all day.", options: ["had been working", "was working", "has been working", "worked"], answer: 0, explanation: "Duration before a past point uses Past Perfect Continuous." },
+    { id: "ppfc8_2", type: "mc", difficulty: 2, prompt: "The ground was wet because it ___.", options: ["had been raining", "rained", "was raining", "has been raining"], answer: 0, explanation: "Cause of a past state, emphasizing duration before that state." },
+    { id: "ppfc8_3", type: "fill", difficulty: 1, prompt: "They ___ (study) for two hours before the exam started.", answer: "had been studying", explanation: "Duration up to a past point: had been + verb-ing." },
+    { id: "ppfc8_4", type: "correct", difficulty: 1, prompt: "He had been work for hours before he stopped.", answer: "He had been working for hours before he stopped.", alternates: ["He had been working for hours before he stopped"], explanation: "Form requires verb-ing: had been working." },
+    { id: "ppfc8_5", type: "tf", difficulty: 1, prompt: "“I had been waiting for an hour when the bus finally came” emphasizes duration before a past event.", answer: true, explanation: "Past Perfect Continuous stresses ongoing duration leading up to another past moment." },
+    { id: "ppfc8_6", type: "tf", difficulty: 2, prompt: "“She had been knowing the answer” is correct.", answer: false, explanation: "'Know' is stative; use Past Perfect Simple: 'had known'." }
+  ],
+  9: [
+    { id: "sf9_1", type: "mc", difficulty: 1, prompt: "I think it ___ rain tomorrow.", options: ["will", "is", "was", "has"], answer: 0, explanation: "Predictions about the future use 'will' + base verb." },
+    { id: "sf9_2", type: "mc", difficulty: 1, prompt: "She ___ visit her grandmother next week.", options: ["will", "is", "was", "has"], answer: 0, explanation: "Future plan/intention: will + base verb." },
+    { id: "sf9_3", type: "mc", difficulty: 2, prompt: "___ you help me carry this box?", options: ["Will", "Do", "Are", "Have"], answer: 0, explanation: "Requests in the future often use 'Will you...?'." },
+    { id: "sf9_4", type: "correct", difficulty: 1, prompt: "She will goes to the market.", answer: "She will go to the market.", alternates: ["She will go to the market"], explanation: "'Will' is always followed by the base verb: will go." },
+    { id: "sf9_5", type: "fill", difficulty: 1, prompt: "I ___ (call) you when I arrive.", answer: "will call", explanation: "Future action: will + base verb." },
+    { id: "sf9_6", type: "tf", difficulty: 1, prompt: "“I will help you tomorrow” expresses a future intention.", answer: true, explanation: "'Will' + base verb expresses future decisions and intentions." },
+    { id: "sf9_7", type: "tf", difficulty: 2, prompt: "“She wills come later” is correct grammar.", answer: false, explanation: "'Will' never takes -s; it stays the same for all subjects." }
+  ],
+  10: [
+    { id: "fc10_1", type: "mc", difficulty: 1, prompt: "This time tomorrow, I ___ on a plane.", options: ["will be flying", "fly", "am flying", "have flown"], answer: 0, explanation: "Action in progress at a specific future time: will be + verb-ing." },
+    { id: "fc10_2", type: "mc", difficulty: 2, prompt: "Don't call at 8, we ___ dinner.", options: ["will be having", "have", "are having", "will have"], answer: 0, explanation: "Ongoing action at a stated future moment." },
+    { id: "fc10_3", type: "fill", difficulty: 1, prompt: "At noon tomorrow, she ___ (work) in the office.", answer: "will be working", explanation: "Future point in progress: will be + verb-ing." },
+    { id: "fc10_4", type: "correct", difficulty: 1, prompt: "I will be study at 8.", answer: "I will be studying at 8.", alternates: ["I will be studying at 8"], explanation: "Form requires verb-ing: will be studying." },
+    { id: "fc10_5", type: "tf", difficulty: 1, prompt: "“This time next week, I will be relaxing on a beach” describes an action in progress at a future moment.", answer: true, explanation: "Future Continuous describes an activity happening at a specified future time." },
+    { id: "fc10_6", type: "tf", difficulty: 2, prompt: "“They will be travel tomorrow” is correct.", answer: false, explanation: "Should be 'will be travelling' — the verb needs -ing after 'will be'." }
+  ],
+  11: [
+    { id: "fp11_1", type: "mc", difficulty: 1, prompt: "By Friday, I ___ the report.", options: ["will have finished", "will finish", "finish", "have finished"], answer: 0, explanation: "Completion before a future deadline uses Future Perfect." },
+    { id: "fp11_2", type: "mc", difficulty: 2, prompt: "She ___ by the time we arrive.", options: ["will have left", "will leave", "leaves", "has left"], answer: 0, explanation: "Action completed before another future point." },
+    { id: "fp11_3", type: "fill", difficulty: 1, prompt: "By next year, they ___ (complete) the bridge.", answer: "will have completed", explanation: "Future completion before a specified point: will have + past participle." },
+    { id: "fp11_4", type: "correct", difficulty: 1, prompt: "I will have finish by Friday.", answer: "I will have finished by Friday.", alternates: ["I will have finished by Friday"], explanation: "Requires past participle: will have finished." },
+    { id: "fp11_5", type: "tf", difficulty: 1, prompt: "“By 6pm, she will have arrived” describes completion before a future point.", answer: true, explanation: "Future Perfect marks an action finished before a stated future time." },
+    { id: "fp11_6", type: "tf", difficulty: 2, prompt: "“She will has arrived” is correct.", answer: false, explanation: "'Will have' is invariable — never 'will has'." }
+  ],
+  12: [
+    { id: "fpc12_1", type: "mc", difficulty: 1, prompt: "By June, I ___ here for five years.", options: ["will have been working", "will be working", "have worked", "work"], answer: 0, explanation: "Duration continuing up to a future milestone: will have been + verb-ing." },
+    { id: "fpc12_2", type: "mc", difficulty: 2, prompt: "By 9 pm, she ___ for three hours.", options: ["will have been studying", "will study", "studies", "has studied"], answer: 0, explanation: "Ongoing duration projected forward to a future point." },
+    { id: "fpc12_3", type: "fill", difficulty: 1, prompt: "By next month, they ___ (live) here for a year.", answer: "will have been living", explanation: "Future duration milestone: will have been + verb-ing." },
+    { id: "fpc12_4", type: "correct", difficulty: 1, prompt: "I will have been work for years.", answer: "I will have been working for years.", alternates: ["I will have been working for years"], explanation: "Requires verb-ing: will have been working." },
+    { id: "fpc12_5", type: "tf", difficulty: 1, prompt: "“By June, I will have been working here for five years” combines a duration and a future milestone.", answer: true, explanation: "Future Perfect Continuous always pairs a duration phrase with a 'by' time marker." },
+    { id: "fpc12_6", type: "tf", difficulty: 2, prompt: "“She will has been studying” is correct.", answer: false, explanation: "Should be 'will have been studying' — 'will have' never becomes 'will has'." }
+  ]
+};
