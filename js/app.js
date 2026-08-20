@@ -61,6 +61,17 @@ function showAuth() {
   $("app").hidden = true;
 }
 
+async function loginAs(user) {
+  currentUser = user;
+  if (user.mode === "supabase" && user.id) {
+    storage.setUser(user.id);
+    await storage.pullCloudProgress(user.id);
+  } else {
+    storage.clearUser();
+  }
+  openApp(user);
+}
+
 // ---------------- RENDER VIEWS ----------------
 
 function renderDashboard() {
@@ -388,9 +399,8 @@ $("mistakesBtn").onclick = () => showScreen("review");
 
 // Auth Controls
 $("guestBtn").onclick = () => {
-  currentUser = { mode: "guest", email: null };
   localStorage.setItem("lt3_guest", "true");
-  openApp(currentUser);
+  loginAs({ mode: "guest", email: null });
 };
 
 $("authForm").onsubmit = async e => {
@@ -412,15 +422,17 @@ $("authForm").onsubmit = async e => {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
       localStorage.removeItem("lt3_guest");
-      currentUser = { mode: "supabase", email: data.user.email };
-      openApp(currentUser);
+      await loginAs({ mode: "supabase", email: data.user.email, id: data.user.id });
     } else {
-      const { data, error } = await supabase.auth.signUp({ email, password });
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { emailRedirectTo: window.location.origin }
+      });
       if (error) throw error;
       if (data.session) {
         localStorage.removeItem("lt3_guest");
-        currentUser = { mode: "supabase", email: data.user.email };
-        openApp(currentUser);
+        await loginAs({ mode: "supabase", email: data.user.email, id: data.user.id });
       } else {
         $("authMessage").textContent = "Sign-up successful! Check your email to confirm your account.";
       }
@@ -502,12 +514,13 @@ document.addEventListener("keydown", e => {
   }
 });
 
-$("logoutBtn").onclick = async () => {
+ $("logoutBtn").onclick = async () => {
   closeMenu();
   try {
     await supabase.auth.signOut();
   } catch {}
   localStorage.removeItem("lt3_guest");
+  storage.clearUser();
   currentUser = { mode: "guest", email: null };
   showAuth();
 };
@@ -540,10 +553,10 @@ $("passwordToggle")?.addEventListener("click", () => {
   supabase.auth.onAuthStateChange((event, authSession) => {
     if (authSession?.user) {
       localStorage.removeItem("lt3_guest");
-      currentUser = { mode: "supabase", email: authSession.user.email };
-      openApp(currentUser);
+      loginAs({ mode: "supabase", email: authSession.user.email, id: authSession.user.id });
     } else if (event === "SIGNED_OUT") {
       localStorage.removeItem("lt3_guest");
+      storage.clearUser();
       currentUser = { mode: "guest", email: null };
       showAuth();
     }
@@ -553,11 +566,9 @@ $("passwordToggle")?.addEventListener("click", () => {
   try {
     const { data, error } = await supabase.auth.getSession();
     if (error) throw error;
-
     if (data?.session?.user) {
       localStorage.removeItem("lt3_guest");
-      currentUser = { mode: "supabase", email: data.session.user.email };
-      openApp(currentUser);
+      await loginAs({ mode: "supabase", email: data.session.user.email, id: data.session.user.id });
       return;
     }
   } catch (err) {
@@ -566,8 +577,7 @@ $("passwordToggle")?.addEventListener("click", () => {
 
   // Fallback to local guest mode if preserved
   if (localStorage.getItem("lt3_guest") === "true") {
-    currentUser = { mode: "guest", email: null };
-    openApp(currentUser);
+    loginAs({ mode: "guest", email: null });
     return;
   }
 
