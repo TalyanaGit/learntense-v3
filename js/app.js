@@ -13,7 +13,6 @@ let session = null;
 let currentUser = { mode: "guest", email: null };
 
 // ---------------- UTILITIES ----------------
-
 function escapeHtml(str) {
   return String(str ?? "")
     .replace(/&/g, "&amp;")
@@ -61,6 +60,8 @@ function showAuth() {
   $("app").hidden = true;
 }
 
+// Central login entry point: sets the active user, wires (or clears) cloud
+// sync in storage.js, pulls cloud progress on account login, then opens the app.
 async function loginAs(user) {
   currentUser = user;
   if (user.mode === "supabase" && user.id) {
@@ -73,7 +74,6 @@ async function loginAs(user) {
 }
 
 // ---------------- RENDER VIEWS ----------------
-
 function renderDashboard() {
   const progresses = TENSES.map(t => storage.getTenseProgress(t.id));
   const total = progresses.reduce((a, p) => a + p.attempted, 0);
@@ -89,6 +89,7 @@ function renderDashboard() {
   const lastId = storage.getLastTense();
   const t = TENSES.find(x => x.id === lastId) || TENSES[0];
   const m = mastery(t.id);
+
   $("continueCard").innerHTML = `
     <div class="continue-main">
       <div>
@@ -175,34 +176,27 @@ function startLesson(id) {
     <span class="badge">${t.category} Tense</span>
     <h1>${t.icon} ${t.name}</h1>
     <p class="muted">${t.short}</p>
-
     <div class="rule">
       <h2>📖 When to use it</h2>
       <ul>${d.when.map(x => `<li>${escapeHtml(x)}</li>`).join("")}</ul>
       <p class="formula"><strong>Structure:</strong> ${escapeHtml(d.structure)}</p>
       <p><strong>Signal words:</strong> ${escapeHtml(d.signals)}</p>
     </div>
-
     <h2>💬 Examples</h2>
     ${d.examples.map(([sent, label]) => `
       <div class="example"><strong>${escapeHtml(label)}</strong><br>${escapeHtml(sent)}</div>`).join("")}
-
     <div class="rule">
       <h2>⚠️ Common mistakes</h2>
       ${d.mistakes.map(([bad, good]) => `
         <div class="example"><span class="bad">❌ ${escapeHtml(bad)}</span><br><strong>✅ ${escapeHtml(good)}</strong></div>`).join("")}
     </div>
-
     <div class="tip-box">💡 <strong>Tip:</strong> ${escapeHtml(d.tip)}</div>
-
     <div class="feedback">
       <strong>🎯 Your mastery: ${m}%</strong>
       <span class="muted">Practice to improve it.</span>
     </div>
-
     <button class="primary full" data-action="quiz" data-id="${id}">Start practice →</button>
     ${gamesHtml}`;
-
   showScreen("lesson");
 }
 
@@ -333,10 +327,10 @@ function showResult() {
     <p class="muted">You got <strong>${session.score}</strong> of <strong>${total}</strong> correct on ${tense.name}.</p>
     <div class="progress-track big"><div class="progress-fill" style="width:${pct}%"></div></div>
     <div class="result-actions">
-<button class="primary" data-action="quiz" data-id="${session.tenseId}" data-mode="${session.mode}" ${session.gameId ? `data-game="${session.gameId}"` : ""}>🔄 Try again</button>
-${session.mode === "game" ? `<button class="secondary" data-action="lesson" data-id="1">← Games</button>` : ""}
-<button class="secondary" data-screen="dashboard">📊 Dashboard</button>
-</div>`;
+      <button class="primary" data-action="quiz" data-id="${session.tenseId}" data-mode="${session.mode}" ${session.gameId ? `data-game="${session.gameId}"` : ""}>🔄 Try again</button>
+      ${session.mode === "game" ? `<button class="secondary" data-action="lesson" data-id="1">← Games</button>` : ""}
+      <button class="secondary" data-screen="dashboard">📊 Dashboard</button>
+    </div>`;
   showScreen("result");
   renderDashboard();
 }
@@ -370,7 +364,6 @@ function startWeakPractice() {
 }
 
 // ---------------- EVENT LISTENERS ----------------
-
 document.addEventListener("click", e => {
   const scr = e.target.closest("[data-screen]");
   if (scr) showScreen(scr.dataset.screen);
@@ -379,13 +372,14 @@ document.addEventListener("click", e => {
   if (!el) return;
   const action = el.dataset.action;
   const id = Number(el.dataset.id);
+
   if (action === "lesson") startLesson(id);
-if (action === "quiz") {
-  const mode = el.dataset.mode || "standard";
-  const gameId = el.dataset.game ? Number(el.dataset.game) : null;
-  startQuiz(id, mode, gameId);
-}
-if (action === "sp-game") startQuiz(1, "game", id);
+  if (action === "quiz") {
+    const mode = el.dataset.mode || "standard";
+    const gameId = el.dataset.game ? Number(el.dataset.game) : null;
+    startQuiz(id, mode, gameId);
+  }
+  if (action === "sp-game") startQuiz(1, "game", id);
   if (action === "weak") startWeakPractice();
   if (action === "mark-reviewed") {
     storage.markReviewed(el.dataset.id);
@@ -514,7 +508,7 @@ document.addEventListener("keydown", e => {
   }
 });
 
- $("logoutBtn").onclick = async () => {
+$("logoutBtn").onclick = async () => {
   closeMenu();
   try {
     await supabase.auth.signOut();
@@ -539,7 +533,6 @@ $("passwordToggle")?.addEventListener("click", () => {
 });
 
 // ---------------- SINGLE INITIALIZATION ----------------
-
 (async function init() {
   const theme = storage.getSettings().theme;
   if (theme === "dark") {
