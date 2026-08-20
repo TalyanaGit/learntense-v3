@@ -143,8 +143,13 @@ export const storage = {
     return read(KEYS.spGames, {});
   },
   saveSPGame(gameId, score) {
-    const p = this.getSPGames();
-    p[gameId] = { completed: true, best: Math.max(score, p[gameId]?.best || 0) };
-    write(KEYS.spGames, p);
-  }
+  const p = this.getSPGames();
+  const prevBest = p[gameId]?.best || 0;
+  const alreadyCompleted = p[gameId]?.completed || false;
+  p[gameId] = {
+    completed: alreadyCompleted || score >= 60,
+    best: Math.max(score, prevBest)
+  };
+  write(KEYS.spGames, p);
+}
 };
