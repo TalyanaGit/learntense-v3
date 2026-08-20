@@ -1,6 +1,11 @@
 /**
  * LearnTense v3 — Local storage with EMA-based mastery & adaptive spaced repetition
  */
+
+import { supabase } from "./supabase.js";
+
+let currentUserId = null;
+
 const KEYS = {
   progress: "lt3_progress",
   mistakes: "lt3_mistakes",
@@ -73,8 +78,10 @@ export const storage = {
     }
 
     p.nextReview = new Date(Date.now() + reviewDays * 86400000).toISOString();
+
     all[id] = p;
     this.setProgress(all);
+    this.syncTenseToCloud(id, p);
     return p;
   },
 
@@ -109,6 +116,7 @@ export const storage = {
     }
     s.lastDate = today;
     write(KEYS.streak, s);
+    this.syncStreakToCloud(s);
     return s.count;
   },
 
@@ -143,13 +151,91 @@ export const storage = {
     return read(KEYS.spGames, {});
   },
   saveSPGame(gameId, score) {
-  const p = this.getSPGames();
-  const prevBest = p[gameId]?.best || 0;
-  const alreadyCompleted = p[gameId]?.completed || false;
-  p[gameId] = {
-    completed: alreadyCompleted || score >= 60,
-    best: Math.max(score, prevBest)
-  };
-  write(KEYS.spGames, p);
-}
+    const p = this.getSPGames();
+    const prevBest = p[gameId]?.best || 0;
+    const alreadyCompleted = p[gameId]?.completed || false;
+    p[gameId] = {
+      completed: alreadyCompleted || score >= 60,
+      best: Math.max(score, prevBest)
+    };
+    write(KEYS.spGames, p);
+  },
+
+  // ---------- Cloud sync (fire-and-forget, never blocks the UI) ----------
+
+  setUser(userId) {
+    currentUserId = userId;
+  },
+
+  clearUser() {
+    currentUserId = null;
+  },
+
+  syncTenseToCloud(tenseId, p) {
+    if (!currentUserId) return;
+    supabase.from("user_progress").upsert({
+      user_id: currentUserId,
+      tense_id: tenseId,
+      questions_attempted: p.attempted,
+      correct_answers: p.correct,
+      mastery: p.mastery,
+      last_practiced: p.lastPracticed,
+      next_review: p.nextReview
+    }, { onConflict: "user_id,tense_id" }).then(({ error }) => {
+      if (error) console.warn("Cloud sync (progress) failed:", error);
+    });
+  },
+
+  syncStreakToCloud(s) {
+    if (!currentUserId) return;
+    supabase.from("streaks").upsert({
+      user_id: currentUserId,
+      count: s.count,
+      last_date: s.lastDate
+    }, { onConflict: "user_id" }).then(({ error }) => {
+      if (error) console.warn("Cloud sync (streak) failed:", error);
+    });
+  },
+
+  // Pulls cloud data on login and merges it into localStorage.
+  // Newer `lastPracticed` / `last_date` wins per tense/streak — never blindly overwrites.
+  async pullCloudProgress(userId) {
+    try {
+      const [{ data: progressRows, error: pErr }, { data: streakRow, error: sErr }] = await Promise.all([
+        supabase.from("user_progress").select("*").eq("user_id", userId),
+        supabase.from("streaks").select("*").eq("user_id", userId).maybeSingle()
+      ]);
+      if (pErr) throw pErr;
+      if (sErr) throw sErr;
+
+      const local = this.getProgress();
+      (progressRows || []).forEach(row => {
+        const localP = local[row.tense_id];
+        const cloudNewer = !localP?.lastPracticed ||
+          (row.last_practiced && new Date(row.last_practiced) > new Date(localP.lastPracticed));
+        if (cloudNewer) {
+          local[row.tense_id] = {
+            attempted: row.questions_attempted,
+            correct: row.correct_answers,
+            mastery: Number(row.mastery),
+            lastPracticed: row.last_practiced,
+            nextReview: row.next_review,
+            consecutiveErrors: localP?.consecutiveErrors || 0
+          };
+        }
+      });
+      this.setProgress(local);
+
+      if (streakRow) {
+        const localStreak = this.getStreak();
+        const cloudNewer = !localStreak.lastDate ||
+          (streakRow.last_date && streakRow.last_date > localStreak.lastDate);
+        if (cloudNewer) {
+          write(KEYS.streak, { count: streakRow.count, lastDate: streakRow.last_date });
+        }
+      }
+    } catch (err) {
+      console.warn("Cloud sync (pull) skipped:", err);
+    }
+  }
 };
