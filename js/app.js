@@ -322,10 +322,10 @@ function showResult() {
     <p class="muted">You got <strong>${session.score}</strong> of <strong>${total}</strong> correct on ${tense.name}.</p>
     <div class="progress-track big"><div class="progress-fill" style="width:${pct}%"></div></div>
     <div class="result-actions">
-      <button class="primary" data-action="quiz" data-id="${session.tenseId}">🔄 Try again</button>
-      ${session.mode === "game" ? `<button class="secondary" data-action="lesson" data-id="1">← Games</button>` : ""}
-      <button class="secondary" data-screen="dashboard">📊 Dashboard</button>
-    </div>`;
+<button class="primary" data-action="quiz" data-id="${session.tenseId}" data-mode="${session.mode}" ${session.gameId ? `data-game="${session.gameId}"` : ""}>🔄 Try again</button>
+${session.mode === "game" ? `<button class="secondary" data-action="lesson" data-id="1">← Games</button>` : ""}
+<button class="secondary" data-screen="dashboard">📊 Dashboard</button>
+</div>`;
   showScreen("result");
   renderDashboard();
 }
