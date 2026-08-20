@@ -369,8 +369,12 @@ document.addEventListener("click", e => {
   const action = el.dataset.action;
   const id = Number(el.dataset.id);
   if (action === "lesson") startLesson(id);
-  if (action === "quiz") startQuiz(id);
-  if (action === "sp-game") startQuiz(1, "game", id);
+if (action === "quiz") {
+  const mode = el.dataset.mode || "standard";
+  const gameId = el.dataset.game ? Number(el.dataset.game) : null;
+  startQuiz(id, mode, gameId);
+}
+if (action === "sp-game") startQuiz(1, "game", id);
   if (action === "weak") startWeakPractice();
   if (action === "mark-reviewed") {
     storage.markReviewed(el.dataset.id);
